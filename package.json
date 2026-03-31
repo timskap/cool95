@@ -1,0 +1,31 @@
+{
+  "name": "blog-admin",
+  "version": "1.0.0",
+  "description": "Blog Admin — Windows 98 Edition",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --mac",
+    "pack": "electron-builder --mac --dir"
+  },
+  "build": {
+    "appId": "cool.timur.blog-admin",
+    "productName": "Blog Admin",
+    "mac": {
+      "category": "public.app-category.productivity",
+      "icon": "icon.png",
+      "target": "dmg"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "preload-browser.js",
+      "app/**/*",
+      "node_modules/**/*"
+    ]
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  }
+}

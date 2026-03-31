@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Windows 98</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'MS Sans Serif', Tahoma, Verdana, sans-serif;
+      font-size: 12px; background: #008080; color: #000;
+      overflow: hidden; height: 100vh;
+      display: flex; flex-direction: column; user-select: none;
+    }
+
+    /* ===== DESKTOP ===== */
+    .desktop { flex: 1; position: relative; overflow: hidden; }
+
+    /* Desktop icons */
+    .desktop-icon {
+      display: flex; flex-direction: column; align-items: center; gap: 2px;
+      width: 72px; cursor: default; padding: 4px 2px; border: 1px solid transparent; position: absolute;
+    }
+    .desktop-icon:hover { background: rgba(0,0,128,0.15); }
+    .desktop-icon.selected { background: rgba(0,0,128,0.4); }
+    .desktop-icon.selected .di-label { color: #fff; text-shadow: none; background: #000080; }
+    .desktop-icon img { width: 32px; height: 32px; image-rendering: pixelated; pointer-events: none; }
+    .di-label {
+      font-size: 11px; color: #fff; text-align: center;
+      text-shadow: 1px 1px 0px #000; padding: 0 2px;
+      word-break: break-word; line-height: 1.2; pointer-events: none;
+    }
+
+    /* Drag-select rectangle */
+    .select-rect {
+      position: absolute; border: 1px dotted #fff;
+      background: rgba(0,0,128,0.15); pointer-events: none; z-index: 2;
+    }
+
+    /* ===== WINDOWS ===== */
+    .w98-win {
+      position: absolute; background: #c0c0c0;
+      border: 2px solid; border-color: #dfdfdf #000 #000 #dfdfdf;
+      box-shadow: inset 1px 1px 0px #fff, inset -1px -1px 0px #808080, 4px 4px 12px rgba(0,0,0,0.35);
+      display: flex; flex-direction: column; min-width: 200px; min-height: 150px;
+    }
+    .w98-win.maximized { top: 0 !important; left: 0 !important; width: 100% !important; height: calc(100% - 0px) !important; }
+    .w98-win.minimized { display: none !important; }
+    .w-titlebar {
+      padding: 2px 3px; display: flex; align-items: center; justify-content: space-between;
+      height: 22px; cursor: default; flex-shrink: 0;
+    }
+    .w-titlebar.active { background: linear-gradient(to right, #0a246a, #3a6ea5); }
+    .w-titlebar.inactive { background: linear-gradient(to right, #808080, #b0b0b0); }
+    .w-title {
+      color: #fff; font-size: 12px; font-weight: bold;
+      display: flex; align-items: center; gap: 4px;
+      overflow: hidden; white-space: nowrap; text-overflow: ellipsis; pointer-events: none;
+    }
+    .w-title img { width: 16px; height: 16px; image-rendering: pixelated; }
+    .w-btns { display: flex; gap: 2px; }
+    .w-btn {
+      width: 16px; height: 14px; background: #c0c0c0;
+      border: 1px solid; border-color: #dfdfdf #000 #000 #dfdfdf;
+      box-shadow: inset 1px 1px 0px #fff, inset -1px -1px 0px #808080;
+      font-size: 9px; cursor: default; display: flex; align-items: center; justify-content: center;
+    }
+    .w-btn:active { border-color: #000 #dfdfdf #dfdfdf #000; box-shadow: inset -1px -1px 0px #fff, inset 1px 1px 0px #808080; }
+    .w-resize { position: absolute; bottom: 0; right: 0; width: 16px; height: 16px; cursor: nwse-resize; }
+    .w-body { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+    .w-menubar { background: #c0c0c0; display: flex; height: 20px; align-items: stretch; border-bottom: 1px solid #808080; flex-shrink: 0; }
+    .w-menu-item { padding: 1px 8px; cursor: default; display: flex; align-items: center; font-size: 11px; }
+    .w-menu-item:hover { background: #000080; color: #fff; }
+    .w-toolbar { background: #c0c0c0; padding: 1px 3px; display: flex; align-items: center; gap: 1px; border-bottom: 1px solid #808080; flex-shrink: 0; }
+    .w-tb { height: 20px; background: #c0c0c0; border: 1px solid #c0c0c0; display: flex; align-items: center; gap: 2px; cursor: default; padding: 0 5px; font-size: 11px; }
+    .w-tb:hover { border-color: #fff #808080 #808080 #fff; }
+    .w-tb:active { border-color: #808080 #fff #fff #808080; }
+    .w-tb img { width: 16px; height: 16px; image-rendering: pixelated; }
+    .w-sep { width: 2px; height: 18px; margin: 0 2px; border-left: 1px solid #808080; border-right: 1px solid #fff; }
+    .w-statusbar { background: #c0c0c0; padding: 1px 3px; display: flex; gap: 3px; border-top: 1px solid #fff; flex-shrink: 0; }
+    .w-status { border: 1px solid; border-color: #808080 #dfdfdf #dfdfdf #808080; padding: 0 5px; font-size: 11px; flex: 1; }
+    .w-status:last-child { flex: 0 0 auto; min-width: 100px; text-align: right; }
+
+    /* ===== TASKBAR ===== */
+    .taskbar {
+      background: #c0c0c0; border-top: 2px solid; border-color: #fff #000 #000 #fff;
+      padding: 2px 4px; display: flex; align-items: center; gap: 3px; height: 32px; flex-shrink: 0;
+    }
+    .tb-start {
+      font-size: 11px; font-weight: bold; height: 24px; padding: 0 6px;
+      background: #c0c0c0; border: 2px solid; border-color: #dfdfdf #000 #000 #dfdfdf;
+      box-shadow: inset 1px 1px 0px #fff, inset -1px -1px 0px #808080;
+      cursor: pointer; display: flex; align-items: center; gap: 3px; flex-shrink: 0;
+    }
+    .tb-start:active, .tb-start.active {
+      border-color: #000 #dfdfdf #dfdfdf #000;
+      box-shadow: inset -1px -1px 0px #fff, inset 1px 1px 0px #808080; background: #b0b0b0;
+    }
+    .tb-start img { width: 16px; height: 16px; image-rendering: pixelated; }
+    .tb-sep { width: 2px; height: 22px; margin: 0 1px; border-left: 1px solid #808080; border-right: 1px solid #fff; flex-shrink: 0; }
+    #taskbar-items { display: flex; gap: 2px; flex: 1; min-width: 0; overflow: hidden; }
+    .tb-item {
+      font-size: 11px; height: 22px; padding: 0 6px;
+      background: #c0c0c0; border: 2px solid; border-color: #dfdfdf #000 #000 #dfdfdf;
+      box-shadow: inset 1px 1px 0px #fff, inset -1px -1px 0px #808080;
+      cursor: pointer; display: flex; align-items: center; gap: 3px;
+      min-width: 40px; max-width: 160px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; flex-shrink: 1;
+    }
+    .tb-item.active {
+      border-color: #000 #dfdfdf #dfdfdf #000;
+      box-shadow: inset -1px -1px 0px #fff, inset 1px 1px 0px #808080; background: #b0b0b0; font-weight: bold;
+    }
+    .tb-item img { width: 16px; height: 16px; image-rendering: pixelated; }
+    .tb-tray {
+      display: flex; align-items: center; gap: 5px; height: 22px; padding: 0 6px;
+      border: 2px solid; border-color: #808080 #dfdfdf #dfdfdf #808080; font-size: 11px; flex-shrink: 0;
+    }
+
+    /* ===== START MENU ===== */
+    .start-menu {
+      position: fixed; bottom: 32px; left: 2px; width: 210px;
+      background: #c0c0c0; border: 2px solid; border-color: #dfdfdf #000 #000 #dfdfdf;
+      box-shadow: inset 1px 1px 0px #fff, inset -1px -1px 0px #808080, 4px 4px 10px rgba(0,0,0,0.3);
+      z-index: 10000; display: none; flex-direction: column;
+    }
+    .start-menu.open { display: flex; }
+    .sm-banner {
+      position: absolute; left: 0; top: 0; bottom: 0; width: 24px;
+      background: linear-gradient(to top, #0a246a, #3a6ea5);
+      display: flex; align-items: flex-end; justify-content: center; padding-bottom: 6px;
+    }
+    .sm-banner span { color: #c0c0c0; font-size: 14px; font-weight: bold; writing-mode: vertical-rl; transform: rotate(180deg); letter-spacing: 1px; }
+    .sm-items { margin-left: 24px; display: flex; flex-direction: column; }
+    .sm-item { padding: 6px 10px; cursor: default; display: flex; align-items: center; gap: 8px; font-size: 12px; }
+    .sm-item:hover { background: #000080; color: #fff; }
+    .sm-item:hover span { color: #c0c0c0 !important; }
+    .sm-item img { width: 32px; height: 32px; image-rendering: pixelated; }
+    .sm-sep { margin: 2px 0; border-top: 1px solid #808080; border-bottom: 1px solid #fff; }
+    .sm-item-small { padding: 5px 10px; cursor: default; display: flex; align-items: center; gap: 8px; font-size: 11px; }
+    .sm-item-small:hover { background: #000080; color: #fff; }
+    .sm-item-small img { width: 16px; height: 16px; image-rendering: pixelated; }
+    .sm-toggle { display: flex; align-items: center; gap: 8px; padding: 5px 10px; cursor: default; font-size: 11px; }
+    .sm-toggle:hover { background: #000080; color: #fff; }
+    .sm-toggle img { width: 16px; height: 16px; image-rendering: pixelated; }
+    .toggle-box {
+      width: 13px; height: 13px; background: #fff;
+      border: 2px solid; border-color: #808080 #dfdfdf #dfdfdf #808080;
+      box-shadow: inset 1px 1px 0px #000;
+      display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold;
+    }
+    .toggle-box.checked::after { content: '\2713'; }
+
+    /* ===== TOAST ===== */
+    .toast {
+      position: fixed; bottom: 40px; right: 10px; z-index: 9999;
+      background: #c0c0c0; border: 2px solid; border-color: #dfdfdf #000 #000 #dfdfdf;
+      box-shadow: inset 1px 1px 0px #fff, inset -1px -1px 0px #808080, 4px 4px 8px rgba(0,0,0,0.3);
+      min-width: 260px; transition: opacity 0.3s;
+    }
+    .toast-hdr {
+      background: linear-gradient(to right, #0a246a, #3a6ea5);
+      padding: 2px 5px; color: #fff; font-size: 11px; font-weight: bold;
+      display: flex; align-items: center; gap: 3px;
+    }
+    .toast-hdr img { width: 14px; height: 14px; image-rendering: pixelated; }
+    .toast-body { padding: 8px 12px; font-size: 12px; display: flex; align-items: center; gap: 8px; }
+    .toast-body img { width: 32px; height: 32px; image-rendering: pixelated; flex-shrink: 0; }
+    .toast-body a { color: #000080; font-size: 11px; cursor: pointer; }
+  </style>
+</head>
+<body>
+
+  <!-- Desktop -->
+  <div class="desktop" id="desktop"></div>
+
+  <!-- Start Menu -->
+  <div class="start-menu" id="start-menu">
+    <div class="sm-banner"><span>Windows 98</span></div>
+    <div class="sm-items">
+      <div id="start-menu-apps"></div>
+      <div class="sm-sep"></div>
+      <div class="sm-toggle" onclick="startAction('fullscreen')">
+        <img src="icons/magnifying_glass-0.png" alt="" onerror="this.outerHTML='&#128306;'">
+        <div style="flex:1">Full Screen</div>
+        <div class="toggle-box" id="fullscreen-check"></div>
+      </div>
+      <div class="sm-sep"></div>
+      <div class="sm-item-small" onclick="startAction('shutdown')">
+        <img src="icons/computer-3.png" alt="">
+        <strong>Shut Down...</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- Taskbar -->
+  <div class="taskbar">
+    <div class="tb-start" id="start-btn"><img src="icons/computer-3.png" alt=""> Start</div>
+    <div class="tb-sep"></div>
+    <div id="taskbar-items"></div>
+    <div class="tb-tray"><span id="tb-clock"></span></div>
+  </div>
+
+  <!-- OS Core -->
+  <script src="os/app-registry.js"></script>
+  <script src="os/window-manager.js"></script>
+  <script src="os/toast.js"></script>
+  <script src="os/desktop.js"></script>
+  <script src="os/taskbar.js"></script>
+
+  <!-- External libs (for Blog Admin) -->
+  <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/aws-sdk/dist/aws-sdk.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@2/dist/editorjs.umd.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@editorjs/header@2/dist/bundle.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@editorjs/list@1/dist/bundle.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@editorjs/image@2/dist/bundle.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@editorjs/code@2/dist/bundle.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@editorjs/quote@2/dist/bundle.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@editorjs/delimiter@1/dist/bundle.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@editorjs/inline-code@1/dist/bundle.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@editorjs/marker@1/dist/bundle.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@editorjs/embed@2/dist/bundle.js"></script>
+
+  <!-- Apps (self-registering) -->
+  <script src="apps/blog-admin.js"></script>
+  <script src="apps/internet-explorer.js"></script>
+  <script src="apps/minesweeper.js"></script>
+
+  <!-- Desktop shortcuts (URL-specific icons, not full apps) -->
+  <script>
+    Desktop.addShortcut({ id: 'timur-cool', label: 'timur.cool', icon: 'icons/internet_connection_wiz-5.png', appId: 'internet-explorer', appOpts: { url: 'https://timur.cool' } });
+    Desktop.addShortcut({ id: 'blog', label: 'Blog', icon: 'icons/directory_folder_options-5.png', appId: 'internet-explorer', appOpts: { url: 'https://timur.cool/blog/' } });
+  </script>
+
+  <!-- Boot -->
+  <script>
+    Desktop.init();
+    Taskbar.init();
+    AppRegistry.open('blog-admin');
+  </script>
+</body>
+</html>
