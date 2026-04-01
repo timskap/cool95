@@ -157,14 +157,17 @@
       }
     });
 
-    wv.addEventListener('did-finish-load', function() {
+    function onLoadDone() {
       document.getElementById('st-' + id).innerHTML = 'Done';
       hideProgress(id);
       WM.setTitle(id, wv.getTitle() || url);
       document.getElementById('url-' + id).value = wv.getURL();
       addHistory(wv.getTitle(), wv.getURL());
       updateLock(id, wv.getURL());
-    });
+    }
+
+    wv.addEventListener('did-finish-load', onLoadDone);
+    wv.addEventListener('did-stop-loading', onLoadDone);
 
     wv.addEventListener('did-start-loading', function() {
       document.getElementById('st-' + id).innerHTML = '<span class="ie-progress ie-progress-anim" id="prog-' + id + '"></span>Loading...';

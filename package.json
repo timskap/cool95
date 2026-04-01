@@ -13,7 +13,7 @@
     "productName": "Cool 95",
     "mac": {
       "category": "public.app-category.productivity",
-      "icon": "icon.png",
+      "icon": "icon.icns",
       "target": "dmg"
     },
     "files": [
