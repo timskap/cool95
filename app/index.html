@@ -3,18 +3,26 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Windows 98</title>
+  <title>Cool 95</title>
   <style>
+    :root { --ui-scale: 1; --s: var(--ui-scale); }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: 'MS Sans Serif', Tahoma, Verdana, sans-serif;
-      font-size: 12px; background: #008080; color: #000;
+      font-size: calc(12px * var(--s)); background: #008080; color: #000;
       overflow: hidden; height: 100vh;
       display: flex; flex-direction: column; user-select: none;
     }
 
+
+    /* ===== TITLEBAR SPACER ===== */
+    .titlebar-spacer {
+      height: 28px; background: transparent; flex-shrink: 0;
+      -webkit-app-region: drag;
+    }
+
     /* ===== DESKTOP ===== */
-    .desktop { flex: 1; position: relative; overflow: hidden; }
+    .desktop { flex: 1; position: relative; overflow: hidden; background: transparent; }
 
     /* Desktop icons */
     .desktop-icon {
@@ -24,17 +32,79 @@
     .desktop-icon:hover { background: rgba(0,0,128,0.15); }
     .desktop-icon.selected { background: rgba(0,0,128,0.4); }
     .desktop-icon.selected .di-label { color: #fff; text-shadow: none; background: #000080; }
-    .desktop-icon img { width: 32px; height: 32px; image-rendering: pixelated; pointer-events: none; }
+    .desktop-icon.dragging { opacity: 0.6; z-index: 9000; }
+    .desktop-icon img { width: calc(32px * var(--s)); height: calc(32px * var(--s)); image-rendering: pixelated; pointer-events: none; }
     .di-label {
       font-size: 11px; color: #fff; text-align: center;
       text-shadow: 1px 1px 0px #000; padding: 0 2px;
       word-break: break-word; line-height: 1.2; pointer-events: none;
+    }
+    .di-rename {
+      font-size: 11px; font-family: inherit; width: 68px; text-align: center;
+      border: 1px solid #000080; padding: 0 2px; background: #fff;
     }
 
     /* Drag-select rectangle */
     .select-rect {
       position: absolute; border: 1px dotted #fff;
       background: rgba(0,0,128,0.15); pointer-events: none; z-index: 2;
+    }
+
+    /* ===== CONTEXT MENU ===== */
+    .ctx-menu {
+      position: fixed; background: #c0c0c0; z-index: 20000;
+      border: 2px solid; border-color: #dfdfdf #000 #000 #dfdfdf;
+      box-shadow: inset 1px 1px 0px #fff, inset -1px -1px 0px #808080, 2px 2px 6px rgba(0,0,0,0.3);
+      min-width: 150px; padding: 2px 0;
+    }
+    .ctx-item {
+      padding: 4px 20px; cursor: default; font-size: 11px; white-space: nowrap; position: relative;
+    }
+    .ctx-item:hover { background: #000080; color: #fff; }
+    .ctx-item.disabled { color: #808080; }
+    .ctx-item.disabled:hover { background: transparent; color: #808080; }
+    .ctx-sep { margin: 2px 4px; border-top: 1px solid #808080; border-bottom: 1px solid #fff; }
+    .ctx-sub {
+      display: none; position: absolute; left: 100%; top: -2px;
+    }
+    .ctx-item:hover > .ctx-sub { display: block; }
+
+    /* ===== DIALOG ===== */
+    .dlg-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.15); z-index: 30000;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .dlg-win {
+      background: #c0c0c0; border: 2px solid; border-color: #dfdfdf #000 #000 #dfdfdf;
+      box-shadow: inset 1px 1px 0px #fff, inset -1px -1px 0px #808080, 4px 4px 12px rgba(0,0,0,0.35);
+      min-width: 320px;
+    }
+    .dlg-titlebar {
+      background: linear-gradient(to right, #0a246a, #3a6ea5);
+      padding: 3px 6px; color: #fff; font-size: 12px; font-weight: bold;
+    }
+    .dlg-body { padding: 12px 16px; }
+    .dlg-field { margin-bottom: 8px; }
+    .dlg-field label { display: block; font-size: 11px; margin-bottom: 2px; }
+    .dlg-input {
+      width: 100%; height: 22px; background: #fff;
+      border: 2px solid; border-color: #808080 #dfdfdf #dfdfdf #808080;
+      box-shadow: inset 1px 1px 0px #000; padding: 0 5px;
+      font-family: inherit; font-size: 12px;
+    }
+    .dlg-buttons {
+      padding: 8px 16px 12px; display: flex; justify-content: flex-end; gap: 6px;
+    }
+    .dlg-btn {
+      min-width: 72px; height: 22px; background: #c0c0c0;
+      border: 2px solid; border-color: #dfdfdf #000 #000 #dfdfdf;
+      box-shadow: inset 1px 1px 0px #fff, inset -1px -1px 0px #808080;
+      font-family: inherit; font-size: 11px; cursor: pointer;
+    }
+    .dlg-btn:active {
+      border-color: #000 #dfdfdf #dfdfdf #000;
+      box-shadow: inset -1px -1px 0px #fff, inset 1px 1px 0px #808080;
     }
 
     /* ===== WINDOWS ===== */
@@ -48,7 +118,7 @@
     .w98-win.minimized { display: none !important; }
     .w-titlebar {
       padding: 2px 3px; display: flex; align-items: center; justify-content: space-between;
-      height: 22px; cursor: default; flex-shrink: 0;
+      height: calc(22px * var(--s)); cursor: default; flex-shrink: 0;
     }
     .w-titlebar.active { background: linear-gradient(to right, #0a246a, #3a6ea5); }
     .w-titlebar.inactive { background: linear-gradient(to right, #808080, #b0b0b0); }
@@ -57,16 +127,15 @@
       display: flex; align-items: center; gap: 4px;
       overflow: hidden; white-space: nowrap; text-overflow: ellipsis; pointer-events: none;
     }
-    .w-title img { width: 16px; height: 16px; image-rendering: pixelated; }
+    .w-title img { width: calc(16px * var(--s)); height: calc(16px * var(--s)); image-rendering: pixelated; }
     .w-btns { display: flex; gap: 2px; }
     .w-btn {
-      width: 16px; height: 14px; background: #c0c0c0;
+      width: calc(16px * var(--s)); height: calc(14px * var(--s)); background: #c0c0c0;
       border: 1px solid; border-color: #dfdfdf #000 #000 #dfdfdf;
       box-shadow: inset 1px 1px 0px #fff, inset -1px -1px 0px #808080;
       font-size: 9px; cursor: default; display: flex; align-items: center; justify-content: center;
     }
     .w-btn:active { border-color: #000 #dfdfdf #dfdfdf #000; box-shadow: inset -1px -1px 0px #fff, inset 1px 1px 0px #808080; }
-    .w-resize { position: absolute; bottom: 0; right: 0; width: 16px; height: 16px; cursor: nwse-resize; }
     .w-body { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
     .w-menubar { background: #c0c0c0; display: flex; height: 20px; align-items: stretch; border-bottom: 1px solid #808080; flex-shrink: 0; }
     .w-menu-item { padding: 1px 8px; cursor: default; display: flex; align-items: center; font-size: 11px; }
@@ -84,10 +153,10 @@
     /* ===== TASKBAR ===== */
     .taskbar {
       background: #c0c0c0; border-top: 2px solid; border-color: #fff #000 #000 #fff;
-      padding: 2px 4px; display: flex; align-items: center; gap: 3px; height: 32px; flex-shrink: 0;
+      padding: 2px 4px; display: flex; align-items: center; gap: 3px; height: calc(32px * var(--s)); flex-shrink: 0;
     }
     .tb-start {
-      font-size: 11px; font-weight: bold; height: 24px; padding: 0 6px;
+      font-weight: bold; height: calc(24px * var(--s)); padding: 0 6px;
       background: #c0c0c0; border: 2px solid; border-color: #dfdfdf #000 #000 #dfdfdf;
       box-shadow: inset 1px 1px 0px #fff, inset -1px -1px 0px #808080;
       cursor: pointer; display: flex; align-items: center; gap: 3px; flex-shrink: 0;
@@ -96,7 +165,7 @@
       border-color: #000 #dfdfdf #dfdfdf #000;
       box-shadow: inset -1px -1px 0px #fff, inset 1px 1px 0px #808080; background: #b0b0b0;
     }
-    .tb-start img { width: 16px; height: 16px; image-rendering: pixelated; }
+    .tb-start img { width: calc(16px * var(--s)); height: calc(16px * var(--s)); image-rendering: pixelated; }
     .tb-sep { width: 2px; height: 22px; margin: 0 1px; border-left: 1px solid #808080; border-right: 1px solid #fff; flex-shrink: 0; }
     #taskbar-items { display: flex; gap: 2px; flex: 1; min-width: 0; overflow: hidden; }
     .tb-item {
@@ -110,7 +179,7 @@
       border-color: #000 #dfdfdf #dfdfdf #000;
       box-shadow: inset -1px -1px 0px #fff, inset 1px 1px 0px #808080; background: #b0b0b0; font-weight: bold;
     }
-    .tb-item img { width: 16px; height: 16px; image-rendering: pixelated; }
+    .tb-item img { width: calc(16px * var(--s)); height: calc(16px * var(--s)); image-rendering: pixelated; }
     .tb-tray {
       display: flex; align-items: center; gap: 5px; height: 22px; padding: 0 6px;
       border: 2px solid; border-color: #808080 #dfdfdf #dfdfdf #808080; font-size: 11px; flex-shrink: 0;
@@ -134,7 +203,7 @@
     .sm-item { padding: 6px 10px; cursor: default; display: flex; align-items: center; gap: 8px; font-size: 12px; }
     .sm-item:hover { background: #000080; color: #fff; }
     .sm-item:hover span { color: #c0c0c0 !important; }
-    .sm-item img { width: 32px; height: 32px; image-rendering: pixelated; }
+    .sm-item img { width: calc(32px * var(--s)); height: calc(32px * var(--s)); image-rendering: pixelated; }
     .sm-sep { margin: 2px 0; border-top: 1px solid #808080; border-bottom: 1px solid #fff; }
     .sm-item-small { padding: 5px 10px; cursor: default; display: flex; align-items: center; gap: 8px; font-size: 11px; }
     .sm-item-small:hover { background: #000080; color: #fff; }
@@ -165,24 +234,70 @@
     .toast-hdr img { width: 14px; height: 14px; image-rendering: pixelated; }
     .toast-body { padding: 8px 12px; font-size: 12px; display: flex; align-items: center; gap: 8px; }
     .toast-body img { width: 32px; height: 32px; image-rendering: pixelated; flex-shrink: 0; }
-    .toast-body a { color: #000080; font-size: 11px; cursor: pointer; }
+
+    /* ===== WALLPAPER PICKER ===== */
+    .wp-preview {
+      width: 100%; height: 140px; margin-bottom: 8px;
+      border: 2px solid; border-color: #808080 #dfdfdf #dfdfdf #808080;
+      box-shadow: inset 1px 1px 0px #000;
+      background: #008080;
+    }
+    .wp-list {
+      height: 150px; overflow-y: auto; background: #fff;
+      border: 2px solid; border-color: #808080 #dfdfdf #dfdfdf #808080;
+      box-shadow: inset 1px 1px 0px #000;
+    }
+    .wp-item {
+      padding: 3px 8px; font-size: 11px; cursor: default;
+    }
+    .wp-item:hover { background: #000080; color: #fff; }
+    .wp-item.wp-selected { background: #000080; color: #fff; }
+
+    /* ===== DISPLAY PROPERTIES TABS ===== */
+    .dp-tabs {
+      display: flex; background: #c0c0c0; padding: 4px 8px 0; gap: 2px;
+    }
+    .dp-tab {
+      padding: 4px 12px; font-size: 11px; cursor: default;
+      background: #c0c0c0; border: 1px solid; border-color: #dfdfdf #808080 #c0c0c0 #dfdfdf;
+      border-bottom: none; position: relative; top: 1px;
+    }
+    .dp-tab-active {
+      background: #c0c0c0; border-color: #dfdfdf #808080 #c0c0c0 #dfdfdf;
+      border-bottom: 1px solid #c0c0c0; font-weight: bold;
+    }
+    .dp-panel { padding: 12px 16px; }
+    .dp-scale-preview {
+      width: 200px; height: 80px; background: #008080;
+      border: 2px solid; border-color: #808080 #dfdfdf #dfdfdf #808080;
+      overflow: hidden; transform-origin: top left;
+    }
+    .dp-sp-titlebar {
+      background: linear-gradient(to right, #0a246a, #3a6ea5);
+      color: #fff; font-size: 10px; font-weight: bold; padding: 2px 4px;
+    }
+    .dp-sp-body {
+      background: #c0c0c0; padding: 6px; font-size: 10px;
+    }
   </style>
 </head>
 <body>
+
+  <!-- macOS titlebar spacer (drag to move window) -->
+  <div class="titlebar-spacer"></div>
 
   <!-- Desktop -->
   <div class="desktop" id="desktop"></div>
 
   <!-- Start Menu -->
   <div class="start-menu" id="start-menu">
-    <div class="sm-banner"><span>Windows 98</span></div>
+    <div class="sm-banner"><span>Cool 95</span></div>
     <div class="sm-items">
       <div id="start-menu-apps"></div>
       <div class="sm-sep"></div>
-      <div class="sm-toggle" onclick="startAction('fullscreen')">
-        <img src="icons/magnifying_glass-0.png" alt="" onerror="this.outerHTML='&#128306;'">
-        <div style="flex:1">Full Screen</div>
-        <div class="toggle-box" id="fullscreen-check"></div>
+      <div class="sm-item-small" onclick="startAction('reset')" style="color:#cc0000">
+        <img src="icons/msg_error-1.png" alt="">
+        <strong>Reset All Data...</strong>
       </div>
       <div class="sm-sep"></div>
       <div class="sm-item-small" onclick="startAction('shutdown')">
@@ -207,36 +322,19 @@
   <script src="os/desktop.js"></script>
   <script src="os/taskbar.js"></script>
 
-  <!-- External libs (for Blog Admin) -->
-  <script src="config.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/aws-sdk/dist/aws-sdk.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@2/dist/editorjs.umd.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@editorjs/header@2/dist/bundle.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@editorjs/list@1/dist/bundle.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@editorjs/image@2/dist/bundle.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@editorjs/code@2/dist/bundle.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@editorjs/quote@2/dist/bundle.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@editorjs/delimiter@1/dist/bundle.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@editorjs/inline-code@1/dist/bundle.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@editorjs/marker@1/dist/bundle.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@editorjs/embed@2/dist/bundle.js"></script>
-
-  <!-- Apps (self-registering) -->
-  <script src="apps/blog-admin.js"></script>
+  <!-- Apps -->
   <script src="apps/internet-explorer.js"></script>
   <script src="apps/minesweeper.js"></script>
-
-  <!-- Desktop shortcuts (URL-specific icons, not full apps) -->
-  <script>
-    Desktop.addShortcut({ id: 'timur-cool', label: 'timur.cool', icon: 'icons/internet_connection_wiz-5.png', appId: 'internet-explorer', appOpts: { url: 'https://timur.cool' } });
-    Desktop.addShortcut({ id: 'blog', label: 'Blog', icon: 'icons/directory_folder_options-5.png', appId: 'internet-explorer', appOpts: { url: 'https://timur.cool/blog/' } });
-  </script>
+  <script src="apps/gta2.js"></script>
+  <script src="apps/winamp.js"></script>
 
   <!-- Boot -->
   <script>
     Desktop.init();
     Taskbar.init();
-    AppRegistry.open('blog-admin');
+    // Restore previous browser session
+    var ie = AppRegistry.getAll()['internet-explorer'];
+    if (ie && ie.restoreSession) ie.restoreSession();
   </script>
 </body>
 </html>

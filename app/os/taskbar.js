@@ -42,20 +42,12 @@ var Taskbar = (function() {
     startOpen = !startOpen;
     document.getElementById('start-menu').classList.toggle('open', startOpen);
     document.getElementById('start-btn').classList.toggle('active', startOpen);
-    if (startOpen) updateFullscreenCheck();
   }
 
   function closeStart() {
     startOpen = false;
     document.getElementById('start-menu').classList.remove('open');
     document.getElementById('start-btn').classList.remove('active');
-  }
-
-  function updateFullscreenCheck() {
-    var el = document.getElementById('fullscreen-check');
-    if (el && window.electronAPI) {
-      el.classList.toggle('checked', window.electronAPI.isFullscreen());
-    }
   }
 
   function update() {
@@ -76,12 +68,10 @@ var Taskbar = (function() {
 // Global start menu actions
 function startAction(action) {
   Taskbar.closeStart();
-  if (action === 'fullscreen' && window.electronAPI) {
-    window.electronAPI.toggleFullscreen();
-    setTimeout(function() {
-      var el = document.getElementById('fullscreen-check');
-      if (el) el.classList.toggle('checked', window.electronAPI.isFullscreen());
-    }, 200);
+  if (action === 'reset' && window.electronAPI) {
+    if (confirm('This will delete ALL data: favorites, history, desktop layout, cookies, cache, and saved logins.\n\nThe app will restart fresh.\n\nContinue?')) {
+      window.electronAPI.resetAllData();
+    }
   } else if (action === 'shutdown' && window.electronAPI) {
     window.electronAPI.shutdown();
   }

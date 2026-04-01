@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    html, body { margin: 0; padding: 0; background: transparent; height: 100%; overflow: hidden; }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script src="https://unpkg.com/webamp@1.5.0/built/webamp.bundle.min.js"></script>
+  <script>
+    var webamp = new Webamp({
+      initialTracks: [
+        {
+          metaData: { artist: "DJ Mike Llama", title: "Llama Whippin' Intro" },
+          url: "https://cdn.jsdelivr.net/gh/nicollasm/webamp-music@master/music/llama-2.91.mp3",
+          duration: 5.322286,
+        }
+      ],
+    });
+
+    webamp.renderWhenReady(document.getElementById('app'));
+
+    // Notify parent via console.log (picked up by console-message event)
+    webamp.onClose(function() {
+      console.log('webamp-closed');
+    });
+
+    webamp.onMinimize(function() {
+      console.log('webamp-minimized');
+    });
+  </script>
+</body>
+</html>
