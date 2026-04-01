@@ -1,6 +1,10 @@
 # Cool 95
 
+![Cool 95](Screenshots/Screenshot%202026-04-01%20at%2016.20.20.png)
+
 A web browser that looks and feels like Windows 95.
+
+![Cool 95 Browser](Screenshots/Screenshot%202026-04-01%20at%2016.20.56.png)
 
 Built with Electron. No frameworks, no bundlers — just vanilla JavaScript and pixel-perfect CSS.
 
