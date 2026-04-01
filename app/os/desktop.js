@@ -15,6 +15,7 @@ var Desktop = (function() {
       if (i.appId) o.appId = i.appId;
       if (i.url) o.url = i.url;
       if (i.items) o.items = i.items;
+      if (i.system) o.system = true;
       return o;
     }));
   }
@@ -80,7 +81,7 @@ var Desktop = (function() {
     var item = {
       id: data.id, type: data.type, label: data.label, icon: data.icon,
       col: data.col, row: data.row, el: el,
-      appId: data.appId || null, url: data.url || null, items: data.items || null,
+      appId: data.appId || null, url: data.url || null, items: data.items || null, system: data.system || false,
     };
     items.push(item);
     if (data.id.indexOf('item-') === 0) {
@@ -337,7 +338,7 @@ var Desktop = (function() {
 
   function loadWallpaper() {
     if (!window.electronAPI) return;
-    var wp = window.electronAPI.storageRead('wallpaper', null);
+    var wp = window.electronAPI.storageRead('wallpaper', 'Underwater 4K.jpg');
     applyWallpaper(wp);
   }
 
@@ -361,7 +362,7 @@ var Desktop = (function() {
     dlg.className = 'dlg-win';
     dlg.style.width = '520px';
 
-    var currentWp = window.electronAPI ? window.electronAPI.storageRead('wallpaper', null) : null;
+    var currentWp = window.electronAPI ? window.electronAPI.storageRead('wallpaper', 'Underwater 4K.jpg') : 'Underwater 4K.jpg';
     var currentScale = window.electronAPI ? window.electronAPI.storageRead('ui-scale', 1) : 1;
     var selectedWp = currentWp;
     var selectedScale = currentScale;
@@ -508,6 +509,14 @@ var Desktop = (function() {
       save();
     }
 
+    // Ensure system shortcuts always exist
+    var systemShortcuts = [
+      { id: 'sys-timur-cool', type: 'shortcut', label: 'timur.cool', icon: 'icons/internet_connection_wiz-5.png', url: 'https://timur.cool', system: true },
+    ];
+    systemShortcuts.forEach(function(sc) {
+      if (!getItem(sc.id)) addItem(sc, true);
+    });
+
     setupEvents(desktop);
   }
 
@@ -639,7 +648,7 @@ var Desktop = (function() {
           '---',
           { label: 'Rename', action: function() { startRename(item); } },
         ];
-        if (item.type !== 'app') {
+        if (item.type !== 'app' && !item.system) {
           menuItems.push({ label: 'Delete', action: function() { removeItem(item.id); } });
         }
         showContextMenu(e.clientX, e.clientY, menuItems);

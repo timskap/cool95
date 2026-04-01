@@ -67,7 +67,7 @@
 
     var body = WM.create('gta2', {
       title: 'Grand Theft Auto 2',
-      icon: 'icons/minesweeper.png',
+      icon: 'icons/gta.png',
       x: 80, y: 20, width: 900, height: 620,
     });
 
@@ -90,7 +90,7 @@
 
   AppRegistry.register('gta2', {
     title: 'GTA 2',
-    icon: 'icons/minesweeper.png',
+    icon: 'icons/gta.png',
     description: 'Grand Theft Auto 2',
     open: open,
     startMenu: true,

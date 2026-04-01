@@ -50,19 +50,53 @@ var Taskbar = (function() {
     document.getElementById('start-btn').classList.remove('active');
   }
 
+  // Custom taskbar entries for apps that don't use WM (like Winamp)
+  var customEntries = {};
+
+  function addCustomEntry(id, opts) {
+    customEntries[id] = { title: opts.title, icon: opts.icon, active: !opts.hidden, onClick: opts.onClick };
+    update();
+  }
+
+  function updateCustomEntry(id, opts) {
+    if (!customEntries[id]) return;
+    if (opts.title !== undefined) customEntries[id].title = opts.title;
+    if (opts.active !== undefined) customEntries[id].active = opts.active;
+    update();
+  }
+
+  function removeCustomEntry(id) {
+    delete customEntries[id];
+    update();
+  }
+
   function update() {
     var wins = WM.getWindows();
     var topZ = WM.getTopZ();
     var c = document.getElementById('taskbar-items');
-    c.innerHTML = Object.keys(wins).map(function(id) {
+    var html = Object.keys(wins).map(function(id) {
       var w = wins[id];
       var active = w.el.style.zIndex == topZ && !w.minimized ? ' active' : '';
       return '<div class="tb-item' + active + '" onclick="WM.toggleMin(\'' + id + '\')">' +
         '<img src="' + (w.icon || 'icons/computer-3.png') + '" alt=""> ' + w.title + '</div>';
     }).join('');
+
+    // Add custom entries
+    Object.keys(customEntries).forEach(function(id) {
+      var e = customEntries[id];
+      var active = e.active ? ' active' : '';
+      html += '<div class="tb-item' + active + '" onclick="Taskbar._customClick(\'' + id + '\')">' +
+        '<img src="' + (e.icon || 'icons/computer-3.png') + '" alt=""> ' + e.title + '</div>';
+    });
+
+    c.innerHTML = html;
   }
 
-  return { init: init, update: update, closeStart: closeStart };
+  function _customClick(id) {
+    if (customEntries[id] && customEntries[id].onClick) customEntries[id].onClick();
+  }
+
+  return { init: init, update: update, closeStart: closeStart, addCustomEntry: addCustomEntry, updateCustomEntry: updateCustomEntry, removeCustomEntry: removeCustomEntry, _customClick: _customClick };
 })();
 
 // Global start menu actions

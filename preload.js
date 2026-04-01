@@ -22,6 +22,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Debug
   resetAllData: () => ipcRenderer.invoke('reset-all-data'),
 
+  // Popup URLs from main process
+  onOpenUrl: (cb) => ipcRenderer.on('open-url', (_e, url) => cb(url)),
+
   // Downloads
   pickSavePath: (name) => ipcRenderer.invoke('pick-save-path', name),
   onDownloadStarted: (cb) => ipcRenderer.on('download-started', (_e, data) => cb(data)),

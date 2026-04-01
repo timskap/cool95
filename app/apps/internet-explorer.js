@@ -1,6 +1,7 @@
 (function() {
   var count = 0;
-  var HOME_URL = 'https://www.msn.com';
+  var DEFAULT_HOME = 'https://www.google.com';
+  var HOME_URL = (window.electronAPI ? window.electronAPI.storageRead('home-url', DEFAULT_HOME) : DEFAULT_HOME);
   var SEARCH_URL = 'https://www.google.com/search?q=';
   var openWindows = {};
 
@@ -142,6 +143,20 @@
     var wv = document.getElementById('wv-' + id);
 
     // ── Webview events ──
+    // Focus window when clicking inside webview content
+    wv.addEventListener('focus', function() { WM.focus(id); });
+
+    // Close context menus when interacting with webview content
+    // Inject a click listener inside the webview that notifies the parent via console
+    wv.addEventListener('dom-ready', function() {
+      wv.executeJavaScript("document.addEventListener('mousedown', function() { console.log('__webview_click__'); })");
+    });
+    wv.addEventListener('console-message', function(e) {
+      if (e.message === '__webview_click__') {
+        document.querySelectorAll('.ctx-menu').forEach(function(m) { m.remove(); });
+      }
+    });
+
     wv.addEventListener('did-finish-load', function() {
       document.getElementById('st-' + id).innerHTML = 'Done';
       hideProgress(id);
@@ -202,7 +217,7 @@
       items.push('---');
       items.push({ label: 'View Source', action: function() { IEApp.viewSource(id); } });
       items.push({ label: 'Create Desktop Shortcut', action: function() { createDesktopShortcut(id); } });
-      showDropdown(e.params.x + 60, e.params.y + 80, items);
+      showDropdown(e.params.x, e.params.y, items);
     });
 
     // Keyboard shortcuts inside the window
@@ -326,6 +341,46 @@
       }
     } else if (menu === 'tools') {
       items = [
+        { label: 'Set Current as Home Page', action: function() {
+          var wv = document.getElementById('wv-' + id);
+          if (wv) {
+            HOME_URL = wv.getURL();
+            if (window.electronAPI) window.electronAPI.storageWrite('home-url', HOME_URL);
+            Toast.show('Home page set to ' + HOME_URL);
+          }
+        }},
+        { label: 'Change Home Page...', action: function() {
+          var current = HOME_URL;
+          // Reuse Desktop's dialog if available
+          if (typeof Desktop !== 'undefined') {
+            var overlay = document.createElement('div');
+            overlay.className = 'dlg-overlay';
+            var dlg = document.createElement('div');
+            dlg.className = 'dlg-win';
+            dlg.innerHTML = '<div class="dlg-titlebar"><span>Home Page</span></div><div class="dlg-body">' +
+              '<div class="dlg-field"><label>URL:</label><input class="dlg-input" id="dlg-home-url" type="text" value="' + HOME_URL + '"></div>' +
+              '</div><div class="dlg-buttons"><button class="dlg-btn" id="dlg-home-ok">OK</button><button class="dlg-btn" id="dlg-home-cancel">Cancel</button></div>';
+            overlay.appendChild(dlg);
+            document.body.appendChild(overlay);
+            document.getElementById('dlg-home-url').focus();
+            document.getElementById('dlg-home-url').select();
+            document.getElementById('dlg-home-ok').onclick = function() {
+              var val = document.getElementById('dlg-home-url').value.trim();
+              if (val) {
+                HOME_URL = val;
+                if (window.electronAPI) window.electronAPI.storageWrite('home-url', HOME_URL);
+                Toast.show('Home page set');
+              }
+              overlay.remove();
+            };
+            document.getElementById('dlg-home-cancel').onclick = function() { overlay.remove(); };
+            dlg.addEventListener('keydown', function(e) {
+              if (e.key === 'Enter') document.getElementById('dlg-home-ok').click();
+              if (e.key === 'Escape') overlay.remove();
+            });
+          }
+        }},
+        '---',
         { label: 'Downloads', action: function() { openDownloadsWindow(); } },
         { label: 'Extensions...', action: function() { openExtensionsManager(); } },
       ];
@@ -629,6 +684,13 @@
   function restoreSession() {
     var urls = store('session', []);
     urls.forEach(function(url) { if (url) open({ url: url }); });
+  }
+
+  // ── Handle popup URLs from main process (OAuth, sign-in windows) ──
+  if (window.electronAPI && window.electronAPI.onOpenUrl) {
+    window.electronAPI.onOpenUrl(function(url) {
+      open({ url: url });
+    });
   }
 
   AppRegistry.register('internet-explorer', {

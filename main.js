@@ -147,8 +147,9 @@ const menuTemplate = [
 const CHROME_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
 
 app.whenReady().then(() => {
-  // Set user agent globally so sites don't block us
+  // Set user agent on both default and browser sessions so sites don't block us
   session.defaultSession.setUserAgent(CHROME_UA);
+  session.fromPartition('persist:browser').setUserAgent(CHROME_UA);
   Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate));
 
   // Load saved extensions
@@ -159,25 +160,65 @@ app.whenReady().then(() => {
 
   createWindow();
 
-  // Handle popups from webviews (OAuth, sign-in, etc.)
+  // Handle popups from webviews (OAuth, sign-in, target=_blank links, etc.)
   app.on('web-contents-created', (_event, contents) => {
+    // For webview contents: handle window.open calls
     if (contents.getType() === 'webview') {
-      contents.setWindowOpenHandler(({ url }) => {
-        const popup = new BrowserWindow({
-          width: 500,
-          height: 650,
-          parent: mainWindow,
-          backgroundColor: '#fff',
-          webPreferences: {
-            partition: 'persist:browser',
-            contextIsolation: true,
-            nodeIntegration: false,
-          },
-        });
-        popup.loadURL(url);
+      contents.setWindowOpenHandler(({ url, disposition, features }) => {
+        // OAuth / sign-in popups: let Electron open them natively
+        // This preserves window.opener so postMessage callbacks work
+        // Only match specific auth provider domains, not generic paths
+        const authDomains = [
+          'accounts.google.com', 'accounts.google.co',
+          'appleid.apple.com',
+          'login.microsoftonline.com',
+          'github.com/login/oauth',
+          'api.twitter.com/oauth',
+          'www.facebook.com/dialog',
+          'discord.com/oauth',
+          'gsi/select',
+        ];
+        const isAuth = authDomains.some(d => url.includes(d));
+        const isPopup = isAuth || (features && features.length > 0 && disposition === 'new-window');
+
+        if (isPopup) {
+          // Allow Electron to create the popup natively — keeps window.opener
+          return {
+            action: 'allow',
+            overrideBrowserWindowOptions: {
+              width: 500,
+              height: 700,
+              parent: mainWindow,
+              webPreferences: {
+                partition: 'persist:browser',
+              },
+            },
+          };
+        }
+
+        // Regular target=_blank links: open as new IE window
+        mainWindow?.webContents.send('open-url', url);
         return { action: 'deny' };
       });
     }
+
+    // For ANY new webContents (including popup windows): set user agent
+    contents.on('did-create-window', (childWindow) => {
+      childWindow.webContents.setUserAgent(CHROME_UA);
+
+      // Handle nested popups within auth windows
+      childWindow.webContents.setWindowOpenHandler(({ url: childUrl }) => {
+        childWindow.loadURL(childUrl);
+        return { action: 'deny' };
+      });
+
+      // Auto-close when the popup window title changes to empty or it navigates to about:blank
+      childWindow.webContents.on('did-navigate', (_e, navUrl) => {
+        if (navUrl === 'about:blank') {
+          setTimeout(() => { try { childWindow.close(); } catch {} }, 500);
+        }
+      });
+    });
   });
 
   // Handle downloads

@@ -7,6 +7,7 @@
     if (webampInstance && hidden) {
       hidden = false;
       webampInstance.reopen();
+      Taskbar.updateCustomEntry('winamp', { active: true });
       return;
     }
     if (webampInstance) return;
@@ -40,25 +41,45 @@
     });
 
     webampInstance.renderWhenReady(container).then(function() {
-      // Make all Webamp windows interactive but let clicks pass through the container
       var webampEl = document.getElementById('webamp');
       if (webampEl) {
         webampEl.style.pointerEvents = 'auto';
       }
     });
 
+    // Add to taskbar
+    Taskbar.addCustomEntry('winamp', {
+      title: 'Winamp',
+      icon: 'icons/winamp.png',
+      onClick: function() {
+        if (hidden) {
+          hidden = false;
+          if (webampInstance) webampInstance.reopen();
+          Taskbar.updateCustomEntry('winamp', { active: true });
+        } else {
+          hidden = true;
+          Taskbar.updateCustomEntry('winamp', { active: false });
+        }
+      },
+    });
+
     webampInstance.onClose(function() {
-      hidden = true;
+      webampInstance.dispose();
+      webampInstance = null;
+      if (container) { container.remove(); container = null; }
+      hidden = false;
+      Taskbar.removeCustomEntry('winamp');
     });
 
     webampInstance.onMinimize(function() {
       hidden = true;
+      Taskbar.updateCustomEntry('winamp', { active: false });
     });
   }
 
   AppRegistry.register('winamp', {
     title: 'Winamp',
-    icon: 'icons/loudspeaker_rays-0.png',
+    icon: 'icons/winamp.png',
     description: 'It really whips the llama\'s ass',
     open: open,
     startMenu: true,
